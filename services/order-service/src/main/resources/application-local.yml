@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/order_db
+    username: orderuser
+    password: orderpass
+  jpa:
+    show-sql: true
+    properties: { hibernate: { format_sql: true } }
+
+app:
+  services:
+    catalog: http://localhost:8081
+    payment: http://localhost:8083

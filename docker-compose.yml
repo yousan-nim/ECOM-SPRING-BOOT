@@ -1,0 +1,170 @@
+# Base compose — defines all services and 3 independent Postgres instances
+# (one per microservice = "Database per Service" pattern).
+#
+# Use with profile overrides:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml   up
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml  up
+#
+# Or via Makefile:  make up-local | make up-dev | make up-prod
+
+name: ecom
+
+services:
+  # ─────────────────────────────────────────────────────────
+  # Databases — one per service
+  # ─────────────────────────────────────────────────────────
+  postgres-catalog:
+    image: postgres:16-alpine
+    container_name: ecom-postgres-catalog
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${CATALOG_DB:-catalog_db}
+      POSTGRES_USER:     ${CATALOG_DB_USER:-catalog}
+      POSTGRES_PASSWORD: ${CATALOG_DB_PASSWORD:-catalog}
+      TZ: Asia/Bangkok
+    volumes:
+      - postgres-catalog-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ecom-net]
+
+  postgres-order:
+    image: postgres:16-alpine
+    container_name: ecom-postgres-order
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${ORDER_DB:-order_db}
+      POSTGRES_USER:     ${ORDER_DB_USER:-orderuser}
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD:-orderpass}
+      TZ: Asia/Bangkok
+    volumes:
+      - postgres-order-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ecom-net]
+
+  postgres-payment:
+    image: postgres:16-alpine
+    container_name: ecom-postgres-payment
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${PAYMENT_DB:-payment_db}
+      POSTGRES_USER:     ${PAYMENT_DB_USER:-paymentuser}
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD:-paymentpass}
+      TZ: Asia/Bangkok
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [ecom-net]
+
+  # ─────────────────────────────────────────────────────────
+  # Services — each builds from monorepo root
+  # ─────────────────────────────────────────────────────────
+  catalog-service:
+    image: ecom/catalog-service:${API_TAG:-local}
+    container_name: ecom-catalog
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      DB_URL:      jdbc:postgresql://postgres-catalog:5432/${CATALOG_DB:-catalog_db}
+      DB_USERNAME: ${CATALOG_DB_USER:-catalog}
+      DB_PASSWORD: ${CATALOG_DB_PASSWORD:-catalog}
+      SERVER_PORT: 8081
+    depends_on:
+      postgres-catalog:
+        condition: service_healthy
+    networks: [ecom-net]
+
+  order-service:
+    image: ecom/order-service:${API_TAG:-local}
+    container_name: ecom-order
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      DB_URL:      jdbc:postgresql://postgres-order:5432/${ORDER_DB:-order_db}
+      DB_USERNAME: ${ORDER_DB_USER:-orderuser}
+      DB_PASSWORD: ${ORDER_DB_PASSWORD:-orderpass}
+      SERVER_PORT: 8082
+      CATALOG_BASE_URL: http://catalog-service:8081
+      PAYMENT_BASE_URL: http://payment-service:8083
+    depends_on:
+      postgres-order:
+        condition: service_healthy
+    networks: [ecom-net]
+
+  payment-service:
+    image: ecom/payment-service:${API_TAG:-local}
+    container_name: ecom-payment
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      DB_URL:      jdbc:postgresql://postgres-payment:5432/${PAYMENT_DB:-payment_db}
+      DB_USERNAME: ${PAYMENT_DB_USER:-paymentuser}
+      DB_PASSWORD: ${PAYMENT_DB_PASSWORD:-paymentpass}
+      SERVER_PORT: 8083
+      CATALOG_BASE_URL: http://catalog-service:8081
+      ORDER_BASE_URL:   http://order-service:8082
+    depends_on:
+      postgres-payment:
+        condition: service_healthy
+    networks: [ecom-net]
+
+  # ─────────────────────────────────────────────────────────
+  # Gateway — single entry point on host port 8080
+  # ─────────────────────────────────────────────────────────
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: ecom-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - catalog-service
+      - order-service
+      - payment-service
+    networks: [ecom-net]
+
+  # ─────────────────────────────────────────────────────────
+  # pgAdmin — register all 3 Postgres servers automatically
+  # ─────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: ecom-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_EMAIL:-admin@ecom.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_CONFIG_ALLOW_SPECIAL_EMAIL_DOMAINS: "['local','dev']"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      - postgres-catalog
+      - postgres-order
+      - postgres-payment
+    networks: [ecom-net]
+
+networks:
+  ecom-net:
+    driver: bridge
+
+volumes:
+  postgres-catalog-data:
+  postgres-order-data:
+  postgres-payment-data:
+  pgadmin-data:

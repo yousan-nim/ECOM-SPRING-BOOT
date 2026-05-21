@@ -1,0 +1,2 @@
+# Place any *.sql / *.sh files here to run once on first Postgres startup.
+# (Flyway will handle schema migrations — keep this for extensions / roles.)

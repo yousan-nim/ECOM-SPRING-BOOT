@@ -1,0 +1,28 @@
+# Dev environment override — full stack runs in containers.
+
+services:
+  postgres-catalog: { ports: ["5432:5432"] }
+  postgres-order:   { ports: ["5433:5432"] }
+  postgres-payment: { ports: ["5434:5432"] }
+  pgadmin:          { ports: ["5050:80"]  }
+
+  catalog-service:
+    build: { context: ., dockerfile: services/catalog-service/Dockerfile }
+    image: ecom/catalog-service:${API_TAG:-dev}
+    environment: { SPRING_PROFILES_ACTIVE: dev, SWAGGER_ENABLED: "true" }
+    ports: ["8081:8081"]
+    deploy: { resources: { limits: { memory: 768M } } }
+
+  order-service:
+    build: { context: ., dockerfile: services/order-service/Dockerfile }
+    image: ecom/order-service:${API_TAG:-dev}
+    environment: { SPRING_PROFILES_ACTIVE: dev }
+    ports: ["8082:8082"]
+    deploy: { resources: { limits: { memory: 768M } } }
+
+  payment-service:
+    build: { context: ., dockerfile: services/payment-service/Dockerfile }
+    image: ecom/payment-service:${API_TAG:-dev}
+    environment: { SPRING_PROFILES_ACTIVE: dev }
+    ports: ["8083:8083"]
+    deploy: { resources: { limits: { memory: 768M } } }

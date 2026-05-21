@@ -1,0 +1,39 @@
+# Local development override.
+# - Expose each Postgres on host so IDE / psql can connect directly.
+# - pgAdmin on 5050.
+# - Gateway already exposed on 8080 (from base).
+# - Services NOT auto-started (run from IDE for hot reload). Use `--profile full` to start them.
+
+services:
+  postgres-catalog:
+    ports: ["5432:5432"]
+
+  postgres-order:
+    ports: ["5433:5432"]
+
+  postgres-payment:
+    ports: ["5434:5432"]
+
+  pgadmin:
+    ports: ["5050:80"]
+
+  catalog-service:
+    profiles: ["full"]
+    build: { context: ., dockerfile: services/catalog-service/Dockerfile }
+    image: ecom/catalog-service:local
+    ports: ["8081:8081"]
+
+  order-service:
+    profiles: ["full"]
+    build: { context: ., dockerfile: services/order-service/Dockerfile }
+    image: ecom/order-service:local
+    ports: ["8082:8082"]
+
+  payment-service:
+    profiles: ["full"]
+    build: { context: ., dockerfile: services/payment-service/Dockerfile }
+    image: ecom/payment-service:local
+    ports: ["8083:8083"]
+
+  gateway:
+    profiles: ["full"]

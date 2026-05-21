@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/payment_db
+    username: paymentuser
+    password: paymentpass
+  jpa:
+    show-sql: true
+    properties: { hibernate: { format_sql: true } }
+
+app:
+  services:
+    catalog: http://localhost:8081
+    order:   http://localhost:8082
