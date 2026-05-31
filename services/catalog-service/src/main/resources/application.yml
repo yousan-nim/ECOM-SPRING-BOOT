@@ -48,6 +48,12 @@ springdoc:
 
 app:
   version: @project.version@
+  jwt:
+    # ⚠️ Dev-only secret. Override JWT_SECRET in production (≥ 32 bytes).
+    secret: ${JWT_SECRET:dev-secret-please-change-in-production-min-32-bytes-required-for-hs256}
+    issuer: ${JWT_ISSUER:ecom-catalog}
+    access-token-ttl: ${JWT_ACCESS_TTL:PT15M}    # 15 minutes
+    refresh-token-ttl: ${JWT_REFRESH_TTL:P7D}    # 7 days
 
 logging:
   level:
