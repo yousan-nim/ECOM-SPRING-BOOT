@@ -28,10 +28,8 @@ public class AuthController {
 
     @Operation(summary = "Register a new customer")
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest req,
-                                                 HttpServletRequest http) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(authService.register(req, http));
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest req,HttpServletRequest http) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(req, http));
     }
 
     @Operation(summary = "Login with email + password")

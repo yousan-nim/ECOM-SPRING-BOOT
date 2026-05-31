@@ -2,6 +2,7 @@ package com.ecom.catalog.domain;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import org.hibernate.annotations.ColumnTransformer;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -45,8 +46,9 @@ public class RefreshToken {
     @Column(name = "user_agent")
     private String userAgent;
 
-    /** Spring Data JPA does not natively bind PG {@code inet} — store as string. */
+    /** PG {@code inet} isn't implicitly cast from varchar — cast the bind param on write. */
     @Column(name = "ip_address", columnDefinition = "inet")
+    @ColumnTransformer(write = "?::inet")
     private String ipAddress;
 
     @Column(name = "replaced_by")

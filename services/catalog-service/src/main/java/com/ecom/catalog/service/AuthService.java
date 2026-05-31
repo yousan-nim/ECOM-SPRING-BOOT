@@ -83,8 +83,7 @@ public class AuthService {
     // ─── Login ───────────────────────────────────────────────────────────
     @Transactional
     public AuthResponse login(LoginRequest req, HttpServletRequest http) {
-        User user = users.findByEmail(req.email().toLowerCase())
-                .orElseThrow(InvalidCredentialsException::new);
+        User user = users.findByEmail(req.email().toLowerCase()).orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
