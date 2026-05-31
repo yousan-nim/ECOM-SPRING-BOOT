@@ -36,7 +36,7 @@ make tables                      # lists tables in all 3 DBs
 open http://localhost:5050       # pgAdmin (3 servers auto-registered)
 
 # 4) Run a service from your IDE (or:)
-make up-local-full               # build + run all 3 services + gateway
+make up-local-full               # build + run all 4 services + gateway
 ```
 
 Then:
@@ -44,11 +44,15 @@ Then:
 | URL | What |
 |---|---|
 | http://localhost:8080/ | Gateway info |
-| http://localhost:8080/catalog/api/v1/ping | Catalog ping via gateway |
+| http://localhost:8080/api/v1/auth/register | Register via gateway (user-service) |
+| http://localhost:8080/api/v1/users/me | Current user via gateway (user-service) |
+| http://localhost:8084/swagger-ui.html | User OpenAPI (direct) |
 | http://localhost:8081/swagger-ui.html | Catalog OpenAPI (direct) |
 | http://localhost:8082/swagger-ui.html | Order OpenAPI (direct) |
 | http://localhost:8083/swagger-ui.html | Payment OpenAPI (direct) |
 | http://localhost:5050 | pgAdmin (admin@ecom.dev / admin) |
+
+> Health/liveness (`/api/v1/ping`, `/actuator/*`) is **not** routed through the gateway — hit each service directly (e.g. `http://localhost:8084/api/v1/ping`).
 
 ---
 

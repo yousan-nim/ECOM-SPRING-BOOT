@@ -5,6 +5,9 @@
 # - Services NOT auto-started (run from IDE for hot reload). Use `--profile full` to start them.
 
 services:
+  postgres-user:
+    ports: ["5435:5432"]
+
   postgres-catalog:
     ports: ["5432:5432"]
 
@@ -16,6 +19,12 @@ services:
 
   pgadmin:
     ports: ["5050:80"]
+
+  user-service:
+    profiles: ["full"]
+    build: { context: ., dockerfile: services/user-service/Dockerfile }
+    image: ecom/user-service:local
+    ports: ["8084:8084"]
 
   catalog-service:
     profiles: ["full"]

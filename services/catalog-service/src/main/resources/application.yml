@@ -34,26 +34,24 @@ server:
   compression: { enabled: true }
   error: { include-message: always, include-binding-errors: always }
   shutdown: graceful
+  # Honour X-Forwarded-* from the gateway (lets springdoc build correct
+  # swagger URLs when served behind /swagger/catalog via X-Forwarded-Prefix).
+  forward-headers-strategy: framework
 
 management:
   endpoints: { web: { exposure: { include: health,info,metrics,prometheus } } }
   endpoint: { health: { show-details: when_authorized, probes: { enabled: true } } }
 
 springdoc:
-  api-docs: { path: /v3/api-docs }
+  api-docs: { path: /v3/api-docs, enabled: "${SWAGGER_ENABLED:true}" }
   swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
 
 app:
   version: @project.version@
-  jwt:
-    # ⚠️ Dev-only secret. Override JWT_SECRET in production (≥ 32 bytes).
-    secret: ${JWT_SECRET:dev-secret-please-change-in-production-min-32-bytes-required-for-hs256}
-    issuer: ${JWT_ISSUER:ecom-catalog}
-    access-token-ttl: ${JWT_ACCESS_TTL:PT15M}    # 15 minutes
-    refresh-token-ttl: ${JWT_REFRESH_TTL:P7D}    # 7 days
 
 logging:
   level:

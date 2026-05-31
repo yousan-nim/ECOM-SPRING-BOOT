@@ -78,20 +78,27 @@ In `prod` profile, Postgres ports are NOT exposed (internal network only).
 
 ## 4. URLs Worth Bookmarking
 
-**Via gateway** (the production-realistic way):
+**Via gateway** (the production-realistic way — unified `/api/v1/*` namespace,
+no service name in the URL):
 
 - `http://localhost:8080/` — gateway info
-- `http://localhost:8080/catalog/api/v1/ping`
-- `http://localhost:8080/order/api/v1/ping`
-- `http://localhost:8080/payment/api/v1/ping`
+- `http://localhost:8080/api/v1/auth/register` — register (→ user-service)
+- `http://localhost:8080/api/v1/auth/login` — login (→ user-service)
+- `http://localhost:8080/api/v1/users/me` — current user (→ user-service)
+
+> Catalog/order/payment resources route the same way once their controllers
+> exist — uncomment the matching `location` block in `infra/nginx/nginx.conf`.
+> Health/liveness (`/api/v1/ping`, `/actuator/*`) is NOT gateway-routed; probe
+> each instance directly.
 
 **Direct** (for OpenAPI docs and debugging):
 
+- `http://localhost:8084/swagger-ui.html` — user API
 - `http://localhost:8081/swagger-ui.html` — catalog API
 - `http://localhost:8082/swagger-ui.html` — order API
 - `http://localhost:8083/swagger-ui.html` — payment API
-- `http://localhost:8081/v3/api-docs` — catalog OpenAPI JSON
-- `http://localhost:8081/actuator/health` — catalog health
+- `http://localhost:8084/v3/api-docs` — user OpenAPI JSON
+- `http://localhost:8084/actuator/health` — user health
 
 **Infrastructure**:
 

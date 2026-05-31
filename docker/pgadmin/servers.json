@@ -1,6 +1,16 @@
 {
   "Servers": {
     "1": {
+      "Name": "User DB",
+      "Group": "ECOM",
+      "Host": "postgres-user",
+      "Port": 5432,
+      "MaintenanceDB": "user_db",
+      "Username": "user_svc",
+      "SSLMode": "prefer",
+      "Comment": "user-service"
+    },
+    "2": {
       "Name": "Catalog DB",
       "Group": "ECOM",
       "Host": "postgres-catalog",
@@ -10,7 +20,7 @@
       "SSLMode": "prefer",
       "Comment": "catalog-service"
     },
-    "2": {
+    "3": {
       "Name": "Order DB",
       "Group": "ECOM",
       "Host": "postgres-order",
@@ -20,7 +30,7 @@
       "SSLMode": "prefer",
       "Comment": "order-service"
     },
-    "3": {
+    "4": {
       "Name": "Payment DB",
       "Group": "ECOM",
       "Host": "postgres-payment",

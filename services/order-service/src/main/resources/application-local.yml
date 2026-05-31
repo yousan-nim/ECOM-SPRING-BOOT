@@ -1,13 +1,16 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/order_db
-    username: orderuser
-    password: orderpass
+    # Env-overridable so the same profile works both ways:
+    #   - from the IDE (no env)      → localhost host-mapped port
+    #   - in a container (--profile full) → DB_URL points at postgres-order
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/order_db}
+    username: ${DB_USERNAME:orderuser}
+    password: ${DB_PASSWORD:orderpass}
   jpa:
     show-sql: true
     properties: { hibernate: { format_sql: true } }
 
 app:
   services:
-    catalog: http://localhost:8081
-    payment: http://localhost:8083
+    catalog: ${CATALOG_BASE_URL:http://localhost:8081}
+    payment: ${PAYMENT_BASE_URL:http://localhost:8083}

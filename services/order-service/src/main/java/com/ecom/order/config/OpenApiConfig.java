@@ -29,7 +29,7 @@ public class OpenApiConfig {
                         .contact(new Contact().name("ECOM Team").email("dev@ecom.dev")))
                 .servers(List.of(
                         new Server().url("http://localhost:8082").description("Local (direct)"),
-                        new Server().url("http://localhost:8080/order").description("Via gateway")))
+                        new Server().url("http://localhost:8080").description("Via gateway")))
                 .addSecurityItem(new SecurityRequirement().addList(bearer))
                 .components(new Components().addSecuritySchemes(bearer,
                         new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")));

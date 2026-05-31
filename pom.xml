@@ -12,6 +12,7 @@
     <description>ECOM platform — multi-service monorepo</description>
 
     <modules>
+        <module>services/user-service</module>
         <module>services/catalog-service</module>
         <module>services/order-service</module>
         <module>services/payment-service</module>

@@ -36,7 +36,7 @@ public class OpenApiConfig {
                         .license(new License().name("Proprietary")))
                 .servers(List.of(
                         new Server().url("http://localhost:8081").description("Local (direct)"),
-                        new Server().url("http://localhost:8080/catalog").description("Via gateway")))
+                        new Server().url("http://localhost:8080").description("Via gateway")))
                 .addSecurityItem(new SecurityRequirement().addList(bearerScheme))
                 .components(new Components()
                         .addSecuritySchemes(bearerScheme, new SecurityScheme()

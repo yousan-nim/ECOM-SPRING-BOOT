@@ -22,13 +22,16 @@ spring:
 server:
   port: ${SERVER_PORT:8083}
   shutdown: graceful
+  # Honour X-Forwarded-* from the gateway (swagger behind /swagger/payment).
+  forward-headers-strategy: framework
 
 management:
   endpoints: { web: { exposure: { include: health,info,metrics,prometheus } } }
   endpoint: { health: { probes: { enabled: true } } }
 
 springdoc:
-  swagger-ui: { path: /swagger-ui.html, operations-sorter: method }
+  api-docs: { path: /v3/api-docs, enabled: "${SWAGGER_ENABLED:true}" }
+  swagger-ui: { enabled: "${SWAGGER_ENABLED:true}", path: /swagger-ui.html, operations-sorter: method }
 
 app:
   version: @project.version@

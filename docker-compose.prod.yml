@@ -4,6 +4,13 @@
 # - Services rely on prebuilt images from your registry.
 
 services:
+  postgres-user:
+    environment:
+      POSTGRES_DB:       ${USER_DB:-user_db}
+      POSTGRES_USER:     ${USER_DB_USER:?required}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:?required}
+    deploy: { resources: { limits: { memory: 2G } } }
+
   postgres-catalog:
     environment:
       POSTGRES_DB:       ${CATALOG_DB:-catalog_db}
@@ -29,6 +36,15 @@ services:
     profiles: ["admin"]
     ports: ["127.0.0.1:5050:80"]
 
+  user-service:
+    image: ${USER_IMAGE:-ecom/user-service}:${API_TAG:-latest}
+    pull_policy: always
+    environment: { SPRING_PROFILES_ACTIVE: prod, SWAGGER_ENABLED: "false" }
+    deploy:
+      replicas: ${USER_REPLICAS:-2}
+      resources: { limits: { memory: 1G } }
+      restart_policy: { condition: any, delay: 10s, max_attempts: 3 }
+
   catalog-service:
     image: ${CATALOG_IMAGE:-ecom/catalog-service}:${API_TAG:-latest}
     pull_policy: always
@@ -41,7 +57,7 @@ services:
   order-service:
     image: ${ORDER_IMAGE:-ecom/order-service}:${API_TAG:-latest}
     pull_policy: always
-    environment: { SPRING_PROFILES_ACTIVE: prod }
+    environment: { SPRING_PROFILES_ACTIVE: prod, SWAGGER_ENABLED: "false" }
     deploy:
       replicas: ${ORDER_REPLICAS:-2}
       resources: { limits: { memory: 1G } }
@@ -49,7 +65,7 @@ services:
   payment-service:
     image: ${PAYMENT_IMAGE:-ecom/payment-service}:${API_TAG:-latest}
     pull_policy: always
-    environment: { SPRING_PROFILES_ACTIVE: prod }
+    environment: { SPRING_PROFILES_ACTIVE: prod, SWAGGER_ENABLED: "false" }
     deploy:
       replicas: ${PAYMENT_REPLICAS:-2}
       resources: { limits: { memory: 1G } }
