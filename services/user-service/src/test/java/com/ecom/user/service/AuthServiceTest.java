@@ -9,8 +9,11 @@ import com.ecom.user.repository.UserRoleRepository;
 import com.ecom.user.security.JwtService;
 import com.ecom.user.security.TokenHasher;
 import com.ecom.user.web.auth.dto.AuthResponse;
+import com.ecom.user.web.auth.dto.ChangePasswordRequest;
 import com.ecom.user.web.auth.dto.RegisterRequest;
 import com.ecom.user.web.error.EmailAlreadyExistsException;
+import com.ecom.user.web.error.InvalidCredentialsException;
+import com.ecom.user.web.error.ValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,11 +25,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -137,5 +144,67 @@ class AuthServiceTest {
         verify(userRoles, never()).save(any());
         verify(refreshTokens, never()).save(any());
         verify(passwordEncoder, never()).encode(any());
+    }
+
+    // ─── changePassword ──────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("changePassword: correct current + new differs → re-encodes hash, revokes all sessions")
+    void changePassword_succeeds() {
+        User user = persistedUser("foo@bar.com");           // passwordHash = "hashed-pw"
+        when(users.findById(1L)).thenReturn(java.util.Optional.of(user));
+        when(passwordEncoder.matches("oldpass", "hashed-pw")).thenReturn(true);
+        when(passwordEncoder.matches("newpass123", "hashed-pw")).thenReturn(false);
+        when(passwordEncoder.encode("newpass123")).thenReturn("new-hash");
+
+        authService.changePassword(1L, new ChangePasswordRequest("oldpass", "newpass123"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+        verify(refreshTokens).revokeAllForUser(eq(1L), any(Instant.class), eq("PASSWORD_CHANGED"));
+    }
+
+    @Test
+    @DisplayName("changePassword: wrong current password → ValidationException, nothing changes")
+    void changePassword_wrongCurrent_throws() {
+        User user = persistedUser("foo@bar.com");
+        when(users.findById(1L)).thenReturn(java.util.Optional.of(user));
+        when(passwordEncoder.matches("wrongpass", "hashed-pw")).thenReturn(false);
+
+        assertThatThrownBy(() ->
+                authService.changePassword(1L, new ChangePasswordRequest("wrongpass", "newpass123")))
+                .isInstanceOf(ValidationException.class);
+
+        assertThat(user.getPasswordHash()).isEqualTo("hashed-pw");
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(refreshTokens, never()).revokeAllForUser(anyLong(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("changePassword: new password equals current → ValidationException, nothing changes")
+    void changePassword_sameAsCurrent_throws() {
+        User user = persistedUser("foo@bar.com");
+        when(users.findById(1L)).thenReturn(java.util.Optional.of(user));
+        // both the "current" check and the "differs" check call matches("oldpass", hash) → true
+        when(passwordEncoder.matches("oldpass", "hashed-pw")).thenReturn(true);
+
+        assertThatThrownBy(() ->
+                authService.changePassword(1L, new ChangePasswordRequest("oldpass", "oldpass")))
+                .isInstanceOf(ValidationException.class);
+
+        assertThat(user.getPasswordHash()).isEqualTo("hashed-pw");
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(refreshTokens, never()).revokeAllForUser(anyLong(), any(), anyString());
+    }
+
+    @Test
+    @DisplayName("changePassword: unknown user id → InvalidCredentialsException, no revoke")
+    void changePassword_unknownUser_throws() {
+        when(users.findById(99L)).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() ->
+                authService.changePassword(99L, new ChangePasswordRequest("oldpass", "newpass123")))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(refreshTokens, never()).revokeAllForUser(anyLong(), any(), anyString());
     }
 }

@@ -6,6 +6,8 @@ import com.ecom.user.repository.UserRoleRepository;
 import com.ecom.user.web.auth.dto.UserResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ecom.user.web.error.ValidationException;
+import com.ecom.user.web.auth.dto.UpdateProfileRequest;
 
 /**
  * User profile read operations. Keeps user look-ups + {@link UserResponse}
@@ -28,4 +30,35 @@ public class UserService {
         User user = users.findById(userId).orElseThrow();
         return UserResponse.of(user, userRoles.findRolesByUserId(user.getId()));
     }
+
+    /**
+    * Partial update of the caller's own profile. Only non-null fields are applied;
+    * an empty string clears the optional phone/avatarUrl. The managed entity is
+    * flushed by dirty-checking — no explicit save needed.
+    */
+    @Transactional
+        public UserResponse updateProfile(Long userId, UpdateProfileRequest req) { 
+            User user = users.findById(userId).orElseThrow(); 
+
+            if (req.fullName() != null) { 
+                if (req.fullName().isBlank()) { 
+                    throw new ValidationException("fullName must not be blank when present"); 
+                }
+                user.setFullName(req.fullName().trim());
+            }
+
+            if (req.phone() != null) { 
+                user.setPhone(emptyToNull(req.phone()));
+            }
+
+            if (req.avatarUrl() != null) { 
+                user.setAvatarUrl(emptyToNull(req.avatarUrl()));
+            }
+
+            return UserResponse.of(user, userRoles.findRolesByUserId(user.getId()));
+        }
+
+        private static String emptyToNull(String s) { 
+            return (s == null || s.isBlank()) ? null : s.trim();
+        }
 }
